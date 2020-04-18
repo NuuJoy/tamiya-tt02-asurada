@@ -1,15 +1,15 @@
 <launch>
   
-  <node pkg="ds4_driver" name="ds4_driver_node" type="ds4_driver_node.py"/>
-  <node pkg="raspi_picamera" name="picamera_frame_visual" type="picamera_frame_visual.py" args="figurename=FrontCamera"/>
-  
-  <!--
-  export ROS_HOSTNAME=NuuJoy-HP
-  export ROS_IP=192.168.254.118
-  export ROS_MASTER_URI=http://192.168.254.118:11311/
-  roslaunch asurada_rpi4tt02 asurada_rpi4tt02_base.launch 
-
-  rosrun ds4_driver ds4_driver_node.py
-  rosrun raspi_picamera picamera_frame_visual.py figurename=FrontCamera
-  -->
+    <node pkg="ds4_driver" name="ds4_driver_node" type="ds4_driver_node.py"/>
+    <node pkg="raspi_picamera" name="picamera_frame_visual" type="picamera_frame_visual.py" args="figurename=FrontCamera"/>
+    
+    <!--
+    export ROS_HOSTNAME=NuuJoy-HP
+    export ROS_IP=192.168.254.118
+    export ROS_MASTER_URI=http://192.168.254.118:11311/
+    roslaunch asurada_rpi4tt02 asurada_rpi4tt02_base.launch 
+    
+    rosrun ds4_driver ds4_driver_node.py
+    rosrun raspi_picamera picamera_frame_visual.py figurename=FrontCamera
+    -->
 </launch>
