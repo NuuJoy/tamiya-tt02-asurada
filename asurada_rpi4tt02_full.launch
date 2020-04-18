@@ -1,0 +1,24 @@
+<launch>
+  
+  <node pkg="ds4_driver" name="ds4_driver_node" type="ds4_driver_node.py"/>
+  <node pkg="hayato_kazami" name="hayato_drive" type="hayato_drive.py"/>
+  <node pkg="pca9685" name="pwm_control" type="pwm_control.py"/>
+  <node pkg="raspi_sensehat" name="sensehat_sensor_acq" type="sensehat_sensor_acq.py" args="50 1 accxyz"/>
+  <node pkg="raspi_sensehat" name="sensehat_led_disp" type="sensehat_led_gsensor.py"/>
+  <node pkg="raspi_picamera" name="picamera_frame_acq" type="picamera_frame_acq.py" args="sensor_mode=5 resolution=[820,466] framerate=15 resize=None rotation=180 queue_size=1"/>
+  <node pkg="raspi_picamera" name="picamera_frame_visual" type="picamera_frame_visual.py" args="figurename=FrontCamera"/>
+  <node pkg="ubloxm8n" name="ubloxm8n_gps" type="ubloxm8n_gps.py" args="RMC"/>
+  <node pkg="ultrasonic" name="ultrasonic_sensor" type="ultrasonic_sensor.py"/>
+  
+  <!--
+  rosrun ds4_driver ds4_driver_node.py
+  rosrun hayato_kazami hayato_drive.py
+  rosrun pca9685 pwm_control.py
+  rosrun raspi_sensehat sensehat_sensor_acq.py 50 1 accxyz
+  rosrun raspi_sensehat sensehat_led_gsensor.py
+  rosrun raspi_picamera picamera_frame_acq.py sensor_mode=5 resolution=[820,466] framerate=15 resize=None rotation=180 queue_size=1
+  rosrun raspi_picamera picamera_frame_visual.py figurename=FrontCamera
+  rosrun ubloxm8n ubloxm8n_gps.py RMC
+  rosrun ultrasonic ultrasonic_sensor.py
+  -->
+</launch>
