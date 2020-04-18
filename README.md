@@ -1,4 +1,4 @@
-# Replace TamiyaTT02Chassis-remoteControl with RaspberryPi4.
+# RaspberryPi4 on TamiyaTT02Chassis.
 tamiya-tt02-asurada
 ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ─ │ ┄ ┆
 
