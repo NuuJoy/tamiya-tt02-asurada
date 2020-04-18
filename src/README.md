@@ -1,1 +1,1 @@
-Need additional "naoki-mizuno/ds4_driver" DualShock 4 driver for ROS.
+Need "naoki-mizuno/ds4_driver" repository. DualShock 4 driver for ROS.
