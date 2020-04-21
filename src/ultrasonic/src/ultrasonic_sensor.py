@@ -5,7 +5,7 @@ import rospy
 import RPi.GPIO
 import time
 import std_msgs.msg
-from raspi_sensehat.msg import sensehat_env
+from std_msgs.msg import Float64
 
 class echoFeedback():
     def __init__(self,trig_pin,echo_pin,timeout,pubobj):
@@ -15,8 +15,9 @@ class echoFeedback():
         self.timeout    = timeout
         self.pubobj     = pubobj
 
-        self.temperature_C = 30.0
-        self.humidity_pcnt = 70.0
+        self.temperature_tph = 30.0
+        self.temperature_tpp = 30.0
+        self.humidity_pcnt   = 70.0
         
         # Initial RPi.GPIO
         RPi.GPIO.setmode(RPi.GPIO.BOARD)
@@ -52,8 +53,8 @@ class echoFeedback():
         
         if StartTime and StopTime:
             TimeElapsed = StopTime - StartTime
-            soundSpeed  = (0.00085*(273.0+self.temperature_C)-0.232677)*self.humidity_pcnt +\
-                           0.5930736*(273.0+self.temperature_C)+169.262723
+            soundSpeed  = (0.00085*(273.0+(self.temperature_tph+self.temperature_tpc)/2.0)-0.232677)*self.humidity_pcnt +\
+                           0.5930736*(273.0+(self.temperature_tph+self.temperature_tpc)/2.0)+169.262723
             distance_mm = 1000.0*(TimeElapsed/2.0)*soundSpeed
 
             print('distancemeasure: ',distance_mm)
@@ -64,10 +65,17 @@ class ultrasonicEnvUpdate():
     def __init__(self,sensor):
         self.sensor = sensor
 
-    def env_update(self,env_status):
+    def envhmd_update(self,envhmd):
         for eachSensor in self.sensor:
-            eachSensor.temperature_C = (env_status.temperature_h+env_status.temperature_p)/2.0
-            eachSensor.humidity      = env_status.humidity
+            eachSensor.humidity = envhmd.data
+
+    def envtph_update(self,envtph):
+        for eachSensor in self.sensor:
+            eachSensor.temperature_tph = envtph.data
+
+    def envtpp_update(self,envtpp):
+        for eachSensor in self.sensor:
+            eachSensor.temperature_tpp = envtpp.data
 
     def attr_update(self,attrName,attrVal):
         for eachSensor in self.sensor:
@@ -122,7 +130,9 @@ if __name__ == '__main__':
             envUpdater = ultrasonicEnvUpdate([frnt_sensor,rear_sensor])
             envUpdater.attr_update('timeout',timeout)
 
-            rospy.Subscriber('/sensehat/env', sensehat_env, envUpdater.env_update, queue_size=1)
+            rospy.Subscriber('/sensehat/envhmd', Float64, envUpdater.envhmd_update, queue_size=1)
+            rospy.Subscriber('/sensehat/envtph', Float64, envUpdater.envtph_update, queue_size=1)
+            rospy.Subscriber('/sensehat/envtpp', Float64, envUpdater.envtpp_update, queue_size=1)
             
             rate = rospy.Rate(rate_hz)
             while not rospy.is_shutdown():
