@@ -12,10 +12,7 @@ rosrun raspi_sensehat sensehat_sensor_acq.py 100 10 joystk accxyz magcps
 import sys
 import rospy
 import sense_hat
-
-from raspi_sensehat.msg import sensehat_env
-from raspi_sensehat.msg import sensehat_imu
-from std_msgs.msg import String
+import std_msgs.msg
 
 def sensor_acquisition(sysInput):
 
@@ -24,57 +21,68 @@ def sensor_acquisition(sysInput):
     sense = sense_hat.SenseHat()
 
     # Enable sensor
-    cps_enable = True if ('magxyz' in sysInput) or ('magcps' in sysInput) else False
-    gyr_enable = True if ('gyrxyz' in sysInput) or ('gyrrpy' in sysInput) else False
     acc_enable = True if ('accxyz' in sysInput) or ('accrpy' in sysInput) else False
-    imu_enable = True if (cps_enable or gyr_enable or acc_enable) else False
+    gyr_enable = True if ('gyrxyz' in sysInput) or ('gyrrpy' in sysInput) else False
+    cps_enable = True if ('magxyz' in sysInput) or ('magcps' in sysInput) else False
     env_enable = True if ('envall' in sysInput) else False
     joy_enable = True if ('joystk' in sysInput) else False
 
-    noneOut = {'x':None,'y':None,'z':None,'roll':None,'pitch':None,'yaw':None}
-
     sense.set_imu_config(cps_enable,gyr_enable,acc_enable)
 
-
-    pub_env = rospy.Publisher('/sensehat/env', sensehat_env, queue_size=queue_size) if env_enable else None
-    pub_imu = rospy.Publisher('/sensehat/imu', sensehat_imu, queue_size=queue_size) if imu_enable else None
-    pub_joy = rospy.Publisher('/sensehat/joystick', String, queue_size=queue_size) if joy_enable else None
+    if ('accxyz' in sysInput):
+        pub_accxyz = rospy.Publisher('/sensehat/accxyz', std_msgs.msg.Vector3, queue_size=queue_size) if acc_enable else None
+    if ('accrpy' in sysInput):
+        pub_accrpy = rospy.Publisher('/sensehat/accrpy', std_msgs.msg.Vector3, queue_size=queue_size) if acc_enable else None
+    if ('gyrxyz' in sysInput):
+        pub_gyrxyz = rospy.Publisher('/sensehat/gyrxyz', std_msgs.msg.Vector3, queue_size=queue_size) if gyr_enable else None
+    if ('gyrrpy' in sysInput):
+        pub_gyrrpy = rospy.Publisher('/sensehat/gyrrpy', std_msgs.msg.Vector3, queue_size=queue_size) if gyr_enable else None
+    if ('magxyz' in sysInput):
+        pub_magxyz = rospy.Publisher('/sensehat/magxyz', std_msgs.msg.Vector3, queue_size=queue_size) if cps_enable else None
+    if ('magcps' in sysInput):
+        pub_magcps = rospy.Publisher('/sensehat/magcps', std_msgs.msg.Float64, queue_size=queue_size) if cps_enable else None
+    if ('envall' in sysInput):
+        pub_envhmd = rospy.Publisher('/sensehat/envhmd', std_msgs.msg.Float64, queue_size=queue_size) if env_enable else None
+        pub_envtph = rospy.Publisher('/sensehat/envtph', std_msgs.msg.Float64, queue_size=queue_size) if env_enable else None
+        pub_envtpp = rospy.Publisher('/sensehat/envtpp', std_msgs.msg.Float64, queue_size=queue_size) if env_enable else None
+        pub_envprs = rospy.Publisher('/sensehat/envprs', std_msgs.msg.Float64, queue_size=queue_size) if env_enable else None
+    if ('joystk' in sysInput):
+        pub_joystk = rospy.Publisher('/sensehat/joystick', std_msgs.msg.String, queue_size=queue_size) if joy_enable else None
 
     rospy.init_node('raspi_sense_hat_sensor', anonymous=True)
     rate = rospy.Rate(rate_hz)
 
-    def inv_z(vector3):
-        return {'x':vector3['x'],'y':vector3['y'],'z':1.0*vector3['z']}
-
     while not rospy.is_shutdown():
-        
-        accxyz = inv_z(sense.get_accelerometer_raw()) if 'accxyz' in sysInput else noneOut
-        accrpy = sense.get_orientation_degrees() if 'accrpy' in sysInput else noneOut
-        gyrxyz = inv_z(sense.get_gyroscope_raw()) if 'gyrxyz' in sysInput else noneOut
-        gyrrpy = sense.get_gyroscope() if 'gyrrpy' in sysInput else noneOut
-        magxyz = inv_z(sense.get_compass_raw()) if 'magxyz' in sysInput else noneOut
-        magcps = sense.get_compass() if 'magcps' in sysInput else None
 
         # IMU sensor
-        if imu_enable:
-            pub_imu.publish(sensehat_imu(accxyz['x'], accxyz['y'], accxyz['z'],
-                                         accrpy['roll'], accrpy['pitch'], accrpy['yaw'],
-                                         gyrxyz['x'], gyrxyz['y'], gyrxyz['z'],
-                                         gyrrpy['roll'], gyrrpy['pitch'], gyrrpy['yaw'],
-                                         magxyz['x'], magxyz['y'], magxyz['z'],magcps))
+        if acc_enable:
+            accxyz = sense.get_accelerometer_raw()
+            pub_accxyz.publish(std_msgs.msg.Vector3(x=accxyz['x'],y=accxyz['y'],z=accxyz['z']))
+            accrpy = sense.get_orientation_degrees()
+            pub_accrpy.publish(std_msgs.msg.Vector3(x=accrpy['roll'],y=accrpy['pitch'],z=accrpy['yaw']))
+        if gyr_enable:
+            gyrxyz = sense.get_gyroscope_raw()
+            pub_gyrxyz.publish(std_msgs.msg.Vector3(x=gyrxyz['x'],y=gyrxyz['y'],z=gyrxyz['z']))
+            gyrrpy = sense.get_gyroscope()
+            pub_gyrrpy.publish(std_msgs.msg.Vector3(x=gyrrpy['roll'],y=gyrrpy['pitch'],z=gyrrpy['yaw']))
+        if cps_enable:
+            magxyz = sense.get_compass_raw()
+            pub_magxyz.publish(std_msgs.msg.Vector3(x=magxyz['x'],y=magxyz['y'],z=magxyz['z']))
+            magcps = sense.get_compass()
+            pub_magcps.publish(std_msgs.msg.Float64(magcps))
 
         # Environment sensor
         if env_enable:
-            pub_env.publish(sensehat_env(sense.get_humidity(),
-                                         sense.get_temperature_from_humidity(),
-                                         sense.get_temperature_from_pressure(),
-                                         sense.get_pressure()))
+            pub_envhmd.publish(std_msgs.msg.Float64(sense.get_humidity()))
+            pub_envtph.publish(std_msgs.msg.Float64(sense.get_temperature_from_humidity()))
+            pub_envtpp.publish(std_msgs.msg.Float64(sense.get_temperature_from_pressure()))
+            pub_envprs.publish(std_msgs.msg.Float64(sense.get_pressure()))
 
         # Joystick event
         if joy_enable:
             getEvents = sense.stick.get_events()
             for eachEvent in getEvents:
-                pub_joy.publish(eachEvent.direction+'_'+eachEvent.action)
+                pub_joystk.publish(eachEvent.direction+'_'+eachEvent.action)
 
         rate.sleep()
         
@@ -83,6 +91,3 @@ if __name__ == '__main__':
         sensor_acquisition(sys.argv)
     except rospy.ROSInterruptException:
         pass
-
-
-
