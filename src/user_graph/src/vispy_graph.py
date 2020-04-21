@@ -4,6 +4,7 @@ import rospy
 import std_msgs.msg
 from ds4_driver.msg import Feedback, Status
 from pca9685.msg import pwm_status
+from hayato_kazami.msg import hayato_to_pwm
 from ubloxm8n.msg import gps_gga
 from ubloxm8n.msg import gps_rmc
 
@@ -31,15 +32,21 @@ vispy.scene.visuals.GridLines(parent=chassis_subplot.scene)
 # add data line plot
 driveCtrl_line = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
                                           color=[1,0,0], antialias=False, method='gl')
-drivePcnt_line = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
+driveHayt_line = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
                                           color=[0,1,0], antialias=False, method='gl')
+drivePcnt_line = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
+                                          color=[0,0,1], antialias=False, method='gl')
 steerCtrl_line = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
                                           color=[0,1,1], antialias=False, method='gl')
-steerPcnt_line = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
+steerHayt_line = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
                                           color=[1,0,1], antialias=False, method='gl')
+steerPcnt_line = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
+                                          color=[1,1,0], antialias=False, method='gl')
 chassis_subplot.add(driveCtrl_line)
+chassis_subplot.add(driveHayt_line)
 chassis_subplot.add(drivePcnt_line)
 chassis_subplot.add(steerCtrl_line)
+chassis_subplot.add(steerHayt_line)
 chassis_subplot.add(steerPcnt_line)
 
 # -------- camera control monitor
@@ -49,11 +56,23 @@ camcontrol_subplot.border_color = (0.5, 0.5, 0.5, 1)
 camcontrol_subplot.camera = vispy.scene.PanZoomCamera(rect=(0,-1.1,49,2.2),interactive=False)
 vispy.scene.visuals.GridLines(parent=camcontrol_subplot.scene)
 # add data line plot
+panCtrl_line   = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
+                                          color=[1,0,0], antialias=False, method='gl')
+panHayt_line   = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
+                                          color=[0,1,0], antialias=False, method='gl')
 panPcnt_line   = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
+                                          color=[0,0,1], antialias=False, method='gl')
+tiltCtrl_line  = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
                                           color=[0,1,1], antialias=False, method='gl')
+tiltHayt_line  = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
+                                          color=[1,0,1], antialias=False, method='gl')
 tiltPcnt_line  = vispy.scene.visuals.Line(pos=numpy.array([[time,2.0*(randVal-0.5)] for time,randVal in zip(range(50),numpy.zeros(51))]),
                                           color=[1,1,0], antialias=False, method='gl')
+camcontrol_subplot.add(panCtrl_line)
+camcontrol_subplot.add(panHayt_line)
 camcontrol_subplot.add(panPcnt_line)
+camcontrol_subplot.add(tiltCtrl_line)
+camcontrol_subplot.add(tiltHayt_line)
 camcontrol_subplot.add(tiltPcnt_line)
 
 # -------- imu accelerometer monitor
@@ -196,8 +215,10 @@ roverstate.reRotation(360*(numpy.random.random()-0.5),360*(numpy.random.random()
 
 class graphDataUpdateModule():
     """ vispy graph updater, this object will do both data-update and graphical-update """
-    def __init__(self,chassis_subplot,driveCtrl_line,drivePcnt_line,steerCtrl_line,steerPcnt_line,\
-                      camcontrol_subplot,panPcnt_line,tiltPcnt_line,\
+    def __init__(self,chassis_subplot,driveCtrl_line,driveHayt_line,drivePcnt_line,\
+                                      steerCtrl_line,steerHayt_line,steerPcnt_line,\
+                      camcontrol_subplot,panCtrl_line,panHayt_line,panPcnt_line,\
+                                         tiltCtrl_line,tiltHayt_line,tiltPcnt_line,\
                       accelerometer_subplot,acclx_line,accly_line,acclz_line,\
                       gyroscope_subplot,gyrox_line,gyroy_line,gyroz_line,\
                       ultrasonic_subplot,frntultra_line,rearultra_line,\
@@ -210,6 +231,10 @@ class graphDataUpdateModule():
         self.pathDataNum     = 36000
         # controller
         self.driveCtrl_data,self.steerCtrl_data = self.plotDataNum*[0.0],self.plotDataNum*[0.0]
+        self.panCtrl_data,self.tiltCtrl_data    = self.plotDataNum*[0.0],self.plotDataNum*[0.0]
+        # hayato
+        self.driveHayt_data,self.steerHayt_data = self.plotDataNum*[0.0],self.plotDataNum*[0.0]
+        self.panHayt_data,self.tiltHayt_data    = self.plotDataNum*[0.0],self.plotDataNum*[0.0]
         # chassis
         self.drivePcnt_data,self.steerPcnt_data = self.plotDataNum*[0.0],self.plotDataNum*[0.0]
         self.panPcnt_data,self.tiltPcnt_data    = self.plotDataNum*[0.0],self.plotDataNum*[0.0]
@@ -231,10 +256,16 @@ class graphDataUpdateModule():
 
         # -------- Init data-plot handle
         self.driveCtrl_line   = driveCtrl_line
-        self.steerCtrl_line   = steerCtrl_line
+        self.driveHayt_line   = driveHayt_line
         self.drivePcnt_line   = drivePcnt_line
+        self.steerCtrl_line   = steerCtrl_line
+        self.steerHayt_line   = steerHayt_line
         self.steerPcnt_line   = steerPcnt_line
+        self.panCtrl_line     = panCtrl_line
+        self.panHayt_line     = panHayt_line
         self.panPcnt_line     = panPcnt_line
+        self.tiltCtrl_line    = tiltCtrl_line
+        self.tiltHayt_line    = tiltHayt_line
         self.tiltPcnt_line    = tiltPcnt_line
         self.acclx_line       = acclx_line
         self.accly_line       = accly_line
@@ -259,15 +290,39 @@ class graphDataUpdateModule():
         else:
             setDrive = -1.0*ds4Status.axis_r2
         setSteer = ds4Status.axis_right_x
+        setPiCamX = ds4Status.axis_left_x
+        setPiCamY = ds4Status.axis_left_y
 
         # update self data store
         self.driveCtrl_data = self.driveCtrl_data[-49:]+[setDrive]
         self.steerCtrl_data = self.steerCtrl_data[-49:]+[setSteer]
+        self.panCtrl_data = self.panCtrl_data[-49:]+[setPiCamX]
+        self.tiltCtrl_data = self.tiltCtrl_data[-49:]+[setPiCamY]
 
         # update vispy graph
-        driveCtrl_line.set_data(numpy.transpose([range(50),self.driveCtrl_data],[1,0]))
-        steerCtrl_line.set_data(numpy.transpose([range(50),self.steerCtrl_data],[1,0]))
+        self.driveCtrl_line.set_data(numpy.transpose([range(50),self.driveCtrl_data],[1,0]))
+        self.steerCtrl_line.set_data(numpy.transpose([range(50),self.steerCtrl_data],[1,0]))
+        self.panCtrl_line.set_data(numpy.transpose([range(50),self.panCtrl_data],[1,0]))
+        self.tiltCtrl_line.set_data(numpy.transpose([range(50),self.tiltCtrl_data],[1,0]))
 
+    def hayatoDataUpdate(self,haytOutput):
+        readDriveHayt_data = haytOutput.set_drive
+        readSteerHayt_data = haytOutput.set_steer
+        readPanHayt_data   = haytOutput.set_picamx
+        readTiltHayt_data  = haytOutput.set_picamy
+
+        # update self data store
+        self.driveHayt_data = self.driveHayt_data[-49:]+[readDriveHayt_data]
+        self.steerHayt_data = self.steerHayt_data[-49:]+[readSteerHayt_data]
+        self.panHayt_data   = self.panHayt_data[-49:]+[readPanHayt_data]
+        self.tiltHayt_data  = self.tiltHayt_data[-49:]+[readTiltHayt_data]
+
+        # update vispy graph
+        self.driveHayt_line.set_data(numpy.transpose([range(50),self.driveHayt_data],[1,0]))
+        self.steerHayt_line.set_data(numpy.transpose([range(50),self.steerHayt_data],[1,0]))
+        self.panHayt_line.set_data(numpy.transpose([range(50),self.panHayt_data],[1,0]))
+        self.tiltHayt_line.set_data(numpy.transpose([range(50),self.tiltHayt_data],[1,0]))
+        
     def chassisDataUpdate(self,pwmStatus):
         readDrivePcnt_data = pwmStatus.current_drive
         readSteerPcnt_data = pwmStatus.current_steer
@@ -373,8 +428,10 @@ class graphDataUpdateModule():
         # update vispy graph (ublox magnetometer)
         self.ubloxmagnet_line.set_data(numpy.array([[0,0,0],[self.cmpsx_data,self.cmpsy_data,0],[self.cmpsx_data,self.cmpsy_data,self.cmpsz_data],[0,0,0]]))
 
-graph = graphDataUpdateModule(chassis_subplot,driveCtrl_line,drivePcnt_line,steerCtrl_line,steerPcnt_line,\
-                              camcontrol_subplot,panPcnt_line,tiltPcnt_line,\
+graph = graphDataUpdateModule(chassis_subplot,driveCtrl_line,driveHayt_line,drivePcnt_line,\
+                                              steerCtrl_line,steerHayt_line,steerPcnt_line,\
+                              camcontrol_subplot,panCtrl_line,panHayt_line,panPcnt_line,\
+                                                 tiltCtrl_line,tiltHayt_line,tiltPcnt_line,\
                               accelerometer_subplot,acclx_line,accly_line,acclz_line,\
                               gyroscope_subplot,gyrox_line,gyroy_line,gyroz_line,\
                               ultrasonic_subplot,frntultra_line,rearultra_line,\
@@ -386,6 +443,7 @@ if __name__ == '__main__' and sys.flags.interactive == 0:
     rospy.init_node('vispy_graph', anonymous=True)
 
     rospy.Subscriber('/status', Status, graph.controllerDataUpdate, queue_size=1)
+    rospy.Subscriber('/hayato/hayato_to_pwm', hayato_to_pwm, graph.hayatoDataUpdate, queue_size=1)
     rospy.Subscriber('/pca9685/pwm_status', pwm_status, graph.chassisDataUpdate, queue_size=1)
 
     rospy.Subscriber('/sensehat/accxyz', std_msgs.msg.Vector3, graph.sensehatAccXYZUpdate, queue_size=1)
