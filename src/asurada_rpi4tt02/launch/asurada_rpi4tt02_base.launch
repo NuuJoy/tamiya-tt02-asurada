@@ -2,6 +2,7 @@
   
     <node pkg="ds4_driver" name="ds4_driver_node" type="ds4_driver_node.py"/>
     <node pkg="raspi_picamera" name="picamera_frame_visual" type="picamera_frame_visual.py" args="figurename=FrontCamera"/>
+    <node pkg="ds4_driver" name="user_graph" type="vispy_graph.py"/>
     
     <!--
     export ROS_HOSTNAME=NuuJoy-HP
