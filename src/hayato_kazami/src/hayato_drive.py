@@ -15,7 +15,7 @@ class hayatoDrive():
         picam_curX       = None
         picam_curY       = None
 
-        self.pub_pwmSet = rospy.Publisher('/hayato/pwm_output', hayato_to_pwm, queue_size=1)
+        self.pub_pwmSet = rospy.Publisher('/hayato/hayato_to_pwm', hayato_to_pwm, queue_size=1)
     
     def pwm_response(self,pwmStatus):
         self.chassis_curSteer = pwmStatus.current_steer
