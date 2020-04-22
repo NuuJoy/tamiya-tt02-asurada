@@ -5,7 +5,6 @@ import rospy
 import RPi.GPIO
 import time
 import std_msgs.msg
-from std_msgs.msg import Float64
 
 class echoFeedback():
     def __init__(self,trig_pin,echo_pin,timeout,pubobj):
@@ -130,9 +129,9 @@ if __name__ == '__main__':
             envUpdater = ultrasonicEnvUpdate([frnt_sensor,rear_sensor])
             envUpdater.attr_update('timeout',timeout)
 
-            rospy.Subscriber('/sensehat/envhmd', Float64, envUpdater.envhmd_update, queue_size=1)
-            rospy.Subscriber('/sensehat/envtph', Float64, envUpdater.envtph_update, queue_size=1)
-            rospy.Subscriber('/sensehat/envtpp', Float64, envUpdater.envtpp_update, queue_size=1)
+            rospy.Subscriber('/sensehat/envhmd', std_msgs.msg.Float64, envUpdater.envhmd_update, queue_size=1)
+            rospy.Subscriber('/sensehat/envtph', std_msgs.msg.Float64, envUpdater.envtph_update, queue_size=1)
+            rospy.Subscriber('/sensehat/envtpp', std_msgs.msg.Float64, envUpdater.envtpp_update, queue_size=1)
             
             rate = rospy.Rate(rate_hz)
             while not rospy.is_shutdown():
